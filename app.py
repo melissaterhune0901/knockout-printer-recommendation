@@ -47,7 +47,7 @@ if prompt := st.chat_input("Enter a competitor model (e.g., HP LaserJet)..."):
             try:
                 # Using the Thinking Config and Google Search tool from your code
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash", # Latest stable model
+                    model="gemini-2.5-flash", # Latest stable model
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instructions,
