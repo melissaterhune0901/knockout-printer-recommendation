@@ -35,29 +35,30 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # User Input
-if prompt := st.chat_input("Enter a competitor model (e.g., HP LaserJet)..."):
-    # Add user message to history
+# --- THE UPDATED INTERACTION BLOCK ---
+if prompt := st.chat_input("Enter a competitor model..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate Response
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing competitive specs and finding match..."):
-            try:
-                # Using the Thinking Config and Google Search tool from your code
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash", # Latest stable model
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instructions,
-                        tools=[types.Tool(google_search=types.GoogleSearch())],
-                    ),
-                )
-                
-                full_response = response.text
-                st.markdown(full_response)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
+        with st.spinner("Finding your 1-to-1 match..."):
+            # We add a 'Force' command to the user's prompt
+            forced_prompt = f"USER REQUEST: {prompt}. \n\nINSTRUCTION: Provide the specific Canon model that replaces this competitor. Do not ask follow-up questions. Give a final recommendation now."
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash", # Use the 2026 stable model
+                contents=forced_prompt,
+                config=types.GenerateContentConfig(
+                    # We inject the data and a 'No Chat' rule here
+                    system_instruction=instructions + "\nRULE: Be decisive. Do not ask for more info. Pick the best match from our list.",
+                    tools=[types.Tool(google_search=types.GoogleSearch())],
+                    temperature=0.1, # 0.1 makes the AI much more 'prescriptive' and less 'chatty'
+                ),
+            )
+            
+            st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
                 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
