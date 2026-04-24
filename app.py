@@ -20,8 +20,8 @@ STRICT RULE: Do not ask follow-up questions. Provide your best recommendation im
 
 # --- 2. APP UI SETUP ---
 st.set_page_config(page_title="Printer Matcher AI", page_icon="🖨️")
-st.title("🖨️ Canon Printer Matcher")
-st.markdown("Enter a competitor model to find the best Canon replacement.")
+st.title("🖨️ Canon Competitor Knockout")
+st.markdown("Tell me what competitor machines your client has and I will advise you on the best Canon replacements. Let's knockout the competition!")
 
 # --- 3. THE CONNECTION ---
 # Ensure your Streamlit Secret is named GEMINI_API_KEY
