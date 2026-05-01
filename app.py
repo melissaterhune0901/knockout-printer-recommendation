@@ -55,7 +55,7 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
                 final_prompt = f"Find the best replacement for: {prompt}. Give the recommendation now."
                 
                 response = client.models.generate_content(
-                    model="gemini-2.0-flash", # Updated to current flash model
+                    model="gemini-1.5-flash", # Updated to current flash model
                     contents=final_prompt,
              
                     config=types.GenerateContentConfig(
