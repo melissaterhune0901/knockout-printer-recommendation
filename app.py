@@ -3,7 +3,6 @@ from google import genai
 from google.genai import types
 
 # --- 1. GLOBAL DATA & INSTRUCTIONS ---
-# Added "Sales Persona" instructions to the bottom of your existing text
 instructions = """
 You are a Printer Replacement Expert and Strategic Sales Consultant. 
 I will provide you with a list of our company's printers. 
@@ -25,20 +24,22 @@ STRICT RULES:
 # --- 2. APP UI SETUP ---
 st.set_page_config(page_title="Printer Matcher AI", page_icon="🖨️")
 st.title("🖨️ Canon Competitor Knockout")
+st.markdown("Enter a competitor model below to find the winning Canon match.")
 
 # --- 3. THE CONNECTION ---
+# Using 1.5-flash as it is the most stable for new billing-enabled accounts
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+MODEL_ID = "gemini-1.5-flash" 
 
-# Initialize Session State to store the comparison for the buttons
+# Initialize Session State
 if "last_comparison" not in st.session_state:
     st.session_state.last_comparison = ""
 
 # --- 4. SIDEBAR SALES TOOLS ---
 with st.sidebar:
     st.header("💰 Sales Toolkit")
-    st.info("First, enter a printer model in the chat. Then use these buttons to generate sales materials.")
+    st.info("First, run a comparison in the chat. Then use these buttons.")
     
-    # These buttons only work if a comparison has been made first
     pitch_btn = st.button("Draft Sales Pitch")
     prop_btn = st.button("Generate Formal Proposal")
     deck_btn = st.button("Outline Slide Deck")
@@ -52,41 +53,43 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
     with st.chat_message("assistant"):
         with st.spinner("Finding your 1-to-1 match..."):
             try:
-                final_prompt = f"Find the best replacement for: {prompt}. Give the recommendation now."
+                final_prompt = f"Find the best replacement for: {prompt}. Provide the recommendation now."
                 
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash", # Updated to current flash model
+                    model=MODEL_ID,
                     contents=final_prompt,
-             
                     config=types.GenerateContentConfig(
-                    system_instruction=instructions,
-                # tools=[types.Tool(google_search=types.GoogleSearch())],
-                temperature=0.1,
-),
+                        system_instruction=instructions,
+                        temperature=0.1,
+                        tools=[], # Keeping tools empty for stability
+                    ),
                 )
-                # Store the result in session state so the buttons can "see" it
+                
                 st.session_state.last_comparison = response.text
                 st.markdown(response.text)
                 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"API Error: {e}")
 
 # --- 6. BUTTON LOGIC ---
-# If a button is clicked, we send the "last_comparison" back to Gemini with a new request
 def generate_sales_extra(task_prompt):
-    if st.session_state.last_comparison == "":
+    if not st.session_state.last_comparison:
         st.sidebar.warning("Please run a comparison in the chat first!")
         return
     
-    with st.expander(f"✨ Your {task_prompt}", expanded=True):
-        with st.spinner("Writing..."):
-            full_request = f"Based on this comparison: '{st.session_state.last_comparison}', please {task_prompt}."
-            res = client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=full_request,
-                config=types.GenerateContentConfig(system_instruction=instructions)
-            )
-            st.markdown(res.text)
+    # Show the output in the main area using an expander
+    with st.chat_message("assistant"):
+        with st.status(f"Creating {task_prompt}...", expanded=True):
+            try:
+                full_request = f"Based on this comparison: '{st.session_state.last_comparison}', please {task_prompt}."
+                res = client.models.generate_content(
+                    model=MODEL_ID,
+                    contents=full_request,
+                    config=types.GenerateContentConfig(system_instruction=instructions)
+                )
+                st.markdown(res.text)
+            except Exception as e:
+                st.error(f"Error generating sales content: {e}")
 
 if pitch_btn:
     generate_sales_extra("write a persuasive 30-second sales pitch")
