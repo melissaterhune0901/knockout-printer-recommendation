@@ -60,7 +60,7 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
              
                     config=types.GenerateContentConfig(
                     system_instruction=instructions,
-                # tools=[types.Tool(google_search=types.GoogleSearch())], <--- Comment this out
+                # tools=[types.Tool(google_search=types.GoogleSearch())],
                 temperature=0.1,
 ),
                 )
