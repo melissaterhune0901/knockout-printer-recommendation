@@ -57,11 +57,12 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
                 response = client.models.generate_content(
                     model="gemini-2.0-flash", # Updated to current flash model
                     contents=final_prompt,
+             
                     config=types.GenerateContentConfig(
-                        system_instruction=instructions,
-                        tools=[types.Tool(google_search=types.GoogleSearch())],
-                        temperature=0.1,
-                    ),
+                    system_instruction=instructions,
+                # tools=[types.Tool(google_search=types.GoogleSearch())], <--- Comment this out
+                temperature=0.1,
+),
                 )
                 # Store the result in session state so the buttons can "see" it
                 st.session_state.last_comparison = response.text
