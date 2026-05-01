@@ -27,9 +27,9 @@ st.title("🖨️ Canon Competitor Knockout")
 st.markdown("Enter a competitor model below to find the winning Canon match.")
 
 # --- 3. THE CONNECTION ---
-# Use 'gemini-1.5-flash-latest' to fix the 404 NOT_FOUND bug in the v1beta API
+# Using Gemini 2.5 Flash - The current stable 2026 workhorse
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-MODEL_ID = "gemini-1.5-flash-latest" 
+MODEL_ID = "gemini-2.5-flash" 
 
 # Initialize Session State
 if "last_comparison" not in st.session_state:
@@ -69,7 +69,6 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
                 st.markdown(response.text)
                 
             except Exception as e:
-                # Clean error reporting to help us debug
                 st.error(f"API Error: {e}")
 
 # --- 6. BUTTON LOGIC ---
