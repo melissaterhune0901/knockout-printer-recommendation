@@ -3,8 +3,7 @@ from google import genai
 from google.genai import types
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-# --- 1. UPDATED INSTRUCTIONS ---
-# I changed the rule to allow sales tools when requested.
+# --- 1. GLOBAL DATA & INSTRUCTIONS ---
 instructions = """
 You are the Canon Product Matcher. Your primary goal is to find a 1-to-1 replacement for competitor printers.
 
@@ -15,7 +14,7 @@ OUR PRODUCT LIST:
 
 STRICT OUTPUT RULES:
 1. For initial matches: Start with "THE WINNING MATCH: [Model Name]" and explain WHY.
-2. For Sales Toolkit requests: You are EXPLICITLY AUTHORIZED to generate pitches, proposals, decks, and quotes based on the match. Use a professional sales tone for these requests.
+2. For Sales Toolkit requests: You are EXPLICITLY AUTHORIZED to generate pitches, decks, and quotes based on the match. Use a professional sales tone for these requests.
 """
 
 st.set_page_config(page_title="Canon Knockout", page_icon="🖨️")
@@ -40,23 +39,21 @@ def safe_generate(prompt_text):
         contents=prompt_text,
         config=types.GenerateContentConfig(
             system_instruction=instructions,
-            temperature=0.2, # Slightly higher for better sales creativity
+            temperature=0.2, 
         ),
     )
 
 if "last_comparison" not in st.session_state:
     st.session_state.last_comparison = ""
 
-# --- SIDEBAR ---
+# --- 2. SIDEBAR (Removed Formal Proposal) ---
 with st.sidebar:
     st.header("💰 Sales Toolkit")
-    # Using columns to prevent accidental double-clicks
     pitch_btn = st.button("Draft Sales Pitch")
-    prop_btn = st.button("Generate Formal Proposal")
     deck_btn = st.button("Outline Slide Deck")
     quote_btn = st.button("Create Quote Table")
 
-# --- MAIN CHAT ---
+# --- 3. MAIN CHAT ---
 if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -71,17 +68,15 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
             except Exception as e:
                 st.error("Server is busy. I'm retrying automatically... if this persists, wait 30 seconds.")
 
-# --- SALES TOOLS LOGIC ---
+# --- 4. SALES TOOLS LOGIC ---
 def generate_sales_extra(task_type):
     if not st.session_state.last_comparison:
         st.sidebar.warning("Search for a printer first!")
         return
     
-    # We display the sales tool output in the main chat area
     with st.chat_message("assistant", avatar="💰"):
         with st.status(f"Generating {task_type}...", expanded=True):
             try:
-                # We tell the model to IGNORE the "No Sales Pitch" rule for this specific request
                 sales_prompt = f"Using the previous match: '{st.session_state.last_comparison}', please {task_type}. This is an authorized sales tool request."
                 res = safe_generate(sales_prompt)
                 st.markdown(res.text)
@@ -89,6 +84,5 @@ def generate_sales_extra(task_type):
                 st.error(f"Could not generate {task_type}. The server might be spiking. Try again in a moment.")
 
 if pitch_btn: generate_sales_extra("write a high-energy 30-second sales pitch")
-if prop_btn:  generate_sales_extra("draft a formal 1-page sales proposal letter")
 if deck_btn:  generate_sales_extra("outline a 5-slide presentation deck")
 if quote_btn: generate_sales_extra("create a professional price quote table")
