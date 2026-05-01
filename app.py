@@ -27,9 +27,9 @@ st.title("🖨️ Canon Competitor Knockout")
 st.markdown("Enter a competitor model below to find the winning Canon match.")
 
 # --- 3. THE CONNECTION ---
-# Using 1.5-flash as it is the most stable for new billing-enabled accounts
+# Use 'gemini-1.5-flash-latest' to fix the 404 NOT_FOUND bug in the v1beta API
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-MODEL_ID = "gemini-1.5-flash" 
+MODEL_ID = "gemini-1.5-flash-latest" 
 
 # Initialize Session State
 if "last_comparison" not in st.session_state:
@@ -61,7 +61,7 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
                     config=types.GenerateContentConfig(
                         system_instruction=instructions,
                         temperature=0.1,
-                        tools=[], # Keeping tools empty for stability
+                        tools=[], 
                     ),
                 )
                 
@@ -69,6 +69,7 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
                 st.markdown(response.text)
                 
             except Exception as e:
+                # Clean error reporting to help us debug
                 st.error(f"API Error: {e}")
 
 # --- 6. BUTTON LOGIC ---
@@ -77,7 +78,6 @@ def generate_sales_extra(task_prompt):
         st.sidebar.warning("Please run a comparison in the chat first!")
         return
     
-    # Show the output in the main area using an expander
     with st.chat_message("assistant"):
         with st.status(f"Creating {task_prompt}...", expanded=True):
             try:
@@ -102,4 +102,3 @@ if deck_btn:
 
 if quote_btn:
     generate_sales_extra("create a professional price quote table")
-
