@@ -3,65 +3,58 @@ from google import genai
 from google.genai import types
 
 # --- 1. GLOBAL DATA & INSTRUCTIONS ---
+# I've tightened these instructions to prioritize the MATCHING.
 instructions = """
-You are a Printer Replacement Expert and Strategic Sales Consultant. 
-I will provide you with a list of our company's printers. 
-When a user tells you a competitor printer model, compare its specs to our list and recommend the best 1-to-1 replacement. 
+You are the Canon Product Matcher. Your primary goal is to find a 1-to-1 replacement for competitor printers.
 
 OUR PRODUCT LIST:
 1. imageCLASS LBP246dx | Category: Home | Vol: 750-4,000 | Lease: $81 | Fast Printing, Wifi
 2. ImageRUNNER Advance 4925i | Category: Office | Vol: 10,000-50,000 | Lease: $500 | B&W, 25 ppm
 3. Color imageCLASS X LBP1538C II | Category: Home/Small Office | Vol: 5,000-10,000 | Lease: $400 | Color, Compact
 
-STRICT RULES:
-1. TECHNICAL RECOMMENDATION: If the user provides a model, give the best match immediately.
-2. SALES PITCH: If asked for a pitch, write a persuasive, high-energy 30-second script focusing on ROI and superiority.
-3. SALES PROPOSAL: If asked for a proposal, create a formal professional letter for a client.
-4. SALES QUOTE: If asked for a quote, create a clean markdown table showing the competitor vs. our machine and the lease price.
-5. SLIDE DECK: If asked for a deck, provide a 5-slide outline with headlines and bullet points.
+STRICT OUTPUT RULES:
+1. When provided a competitor model, start your response with: "THE WINNING MATCH: [Our Model Name]"
+2. Briefly explain WHY it matches (Volume, Category, or Price).
+3. Do NOT provide a sales pitch unless the user clicks a sales button.
 """
 
 # --- 2. APP UI SETUP ---
-st.set_page_config(page_title="Printer Matcher AI", page_icon="🖨️")
+st.set_page_config(page_title="Canon Knockout", page_icon="🖨️")
 st.title("🖨️ Canon Competitor Knockout")
-st.markdown("Enter a competitor model below to find the winning Canon match.")
 
 # --- 3. THE CONNECTION ---
-# Using Gemini 2.5 Flash - The current stable 2026 workhorse
+# Using the stable 2026 2.5-flash model
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 MODEL_ID = "gemini-2.5-flash" 
 
-# Initialize Session State
 if "last_comparison" not in st.session_state:
     st.session_state.last_comparison = ""
 
-# --- 4. SIDEBAR SALES TOOLS ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     st.header("💰 Sales Toolkit")
-    st.info("First, run a comparison in the chat. Then use these buttons.")
-    
     pitch_btn = st.button("Draft Sales Pitch")
     prop_btn = st.button("Generate Formal Proposal")
     deck_btn = st.button("Outline Slide Deck")
     quote_btn = st.button("Create Quote Table")
 
-# --- 5. MAIN CHAT INTERACTION ---
+# --- 5. CHAT ---
 if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Finding your 1-to-1 match..."):
+        with st.spinner("Analyzing competitor specs..."):
             try:
-                final_prompt = f"Find the best replacement for: {prompt}. Provide the recommendation now."
+                # Force the prompt to focus on our product list
+                final_prompt = f"Identify the competitor printer: {prompt}. Match it to exactly one printer from our list. Explain why."
                 
                 response = client.models.generate_content(
                     model=MODEL_ID,
                     contents=final_prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=instructions,
-                        temperature=0.1,
-                        tools=[], 
+                        temperature=0.1, # Low temperature keeps it factual/consistent
                     ),
                 )
                 
@@ -71,16 +64,17 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
             except Exception as e:
                 st.error(f"API Error: {e}")
 
-# --- 6. BUTTON LOGIC ---
+# --- 6. SALES TOOLS LOGIC ---
 def generate_sales_extra(task_prompt):
     if not st.session_state.last_comparison:
-        st.sidebar.warning("Please run a comparison in the chat first!")
+        st.sidebar.warning("Search for a printer in the chat first!")
         return
     
     with st.chat_message("assistant"):
         with st.status(f"Creating {task_prompt}...", expanded=True):
             try:
-                full_request = f"Based on this comparison: '{st.session_state.last_comparison}', please {task_prompt}."
+                # This prompt takes the specific match found above and transforms it
+                full_request = f"Using this match: '{st.session_state.last_comparison}', please {task_prompt}."
                 res = client.models.generate_content(
                     model=MODEL_ID,
                     contents=full_request,
@@ -88,16 +82,9 @@ def generate_sales_extra(task_prompt):
                 )
                 st.markdown(res.text)
             except Exception as e:
-                st.error(f"Error generating sales content: {e}")
+                st.error(f"Error: {e}")
 
-if pitch_btn:
-    generate_sales_extra("write a persuasive 30-second sales pitch")
-
-if prop_btn:
-    generate_sales_extra("draft a formal 1-page sales proposal letter")
-
-if deck_btn:
-    generate_sales_extra("outline a 5-slide presentation deck")
-
-if quote_btn:
-    generate_sales_extra("create a professional price quote table")
+if pitch_btn: generate_sales_extra("write a high-energy 30-second sales pitch")
+if prop_btn:  generate_sales_extra("draft a formal 1-page sales proposal letter")
+if deck_btn:  generate_sales_extra("outline a 5-slide presentation deck")
+if quote_btn: generate_sales_extra("create a professional price quote table")
