@@ -81,7 +81,7 @@ def generate_sales_extra(task_prompt):
         with st.spinner("Writing..."):
             full_request = f"Based on this comparison: '{st.session_state.last_comparison}', please {task_prompt}."
             res = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-1.5-flash",
                 contents=full_request,
                 config=types.GenerateContentConfig(system_instruction=instructions)
             )
