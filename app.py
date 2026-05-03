@@ -25,7 +25,9 @@ def get_client():
     return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 client = get_client()
-MODEL_ID = "gemini-2.5-flash" 
+
+# Using a standard stable ID for broad compatibility
+MODEL_ID = "gemini-1.5-flash" 
 
 # Robust retry logic for 503/429 errors
 @retry(
@@ -39,14 +41,20 @@ def safe_generate(prompt_text):
         contents=prompt_text,
         config=types.GenerateContentConfig(
             system_instruction=instructions,
-            temperature=0.2, 
+            temperature=0.2,
+            # --- THE ADDITION: Enable Google Search Tool ---
+            tools=[
+                types.Tool(
+                    google_search_retrieval=types.GoogleSearchRetrieval()
+                )
+            ]
         ),
     )
 
 if "last_comparison" not in st.session_state:
     st.session_state.last_comparison = ""
 
-# --- 2. SIDEBAR (Removed Formal Proposal) ---
+# --- 2. SIDEBAR (Sales Toolkit) ---
 with st.sidebar:
     st.header("💰 Sales Toolkit")
     pitch_btn = st.button("Draft Sales Pitch")
@@ -59,14 +67,15 @@ if prompt := st.chat_input("Ex: HP LaserJet Pro M404n"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Finding the best Canon match..."):
+        with st.spinner("Searching Google for competitor specs and finding the best Canon match..."):
             try:
-                final_prompt = f"Competitor: {prompt}. Match it to our list and explain why."
+                # The model will now search Google to find info on the competitor model
+                final_prompt = f"Find the specifications for the competitor: {prompt}. Then, match it to our Canon list and explain why."
                 response = safe_generate(final_prompt)
                 st.session_state.last_comparison = response.text
                 st.markdown(response.text)
             except Exception as e:
-                st.error("Server is busy. I'm retrying automatically... if this persists, wait 30 seconds.")
+                st.error(f"Error: {e}")
 
 # --- 4. SALES TOOLS LOGIC ---
 def generate_sales_extra(task_type):
@@ -81,7 +90,7 @@ def generate_sales_extra(task_type):
                 res = safe_generate(sales_prompt)
                 st.markdown(res.text)
             except Exception as e:
-                st.error(f"Could not generate {task_type}. The server might be spiking. Try again in a moment.")
+                st.error(f"Could not generate {task_type}. Error: {e}")
 
 if pitch_btn: generate_sales_extra("write a high-energy 30-second sales pitch")
 if deck_btn:  generate_sales_extra("outline a 5-slide presentation deck")
